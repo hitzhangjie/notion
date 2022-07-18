@@ -159,8 +159,7 @@ func parseCSV(f string) ([]Article, error) {
 			fieldName := strings.TrimSpace(fields[i])
 			fd := rv.FieldByName(fieldName)
 			if !fd.IsValid() {
-				fmt.Println("what the fuck: ", fieldName)
-				fmt.Println("len(fieldName: ", len([]rune(fieldName)))
+				panic(fmt.Sprintf("invalid field: %s", fieldName))
 			}
 			fd.SetString(f)
 		}
@@ -215,7 +214,10 @@ func init() {
 }
 
 func generateMarkdown(r Article, out string) error {
-	out = filepath.Join(out, r.About+".md")
+	dir := filepath.Join(out, r.Category)
+	_ = os.MkdirAll(dir, os.ModePerm)
+
+	out = filepath.Join(dir, r.About+".md")
 
 	buf := &bytes.Buffer{}
 	err := tpl.Execute(buf, r)
@@ -226,6 +228,8 @@ func generateMarkdown(r Article, out string) error {
 	return os.WriteFile(out, buf.Bytes(), 0644)
 }
 
+// Article 结构体中各个字段对应着notion导出的csv的表头字段，必须一一对应
+// see: https://www.notion.so/hitzhangjie/149643669e0846e6b8e3294d04a6df0d?v=e1cea88688ec4102ae5d9af8cf9ac4c7
 type Article struct {
 	Category  string
 	About     string
