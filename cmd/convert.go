@@ -44,10 +44,9 @@ csv of table to a series of Markdown files.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		csv, _ := cmd.Flags().GetString("csv")
 		out, _ := cmd.Flags().GetString("out")
+		flat, _ := cmd.Flags().GetBool("flat")
 
-		os.MkdirAll(out, os.ModePerm)
-
-		err := csvToMarkdowns(csv, out)
+		err := csvToMarkdowns(csv, out, flat)
 		if err != nil {
 			os.RemoveAll(out)
 			return err
@@ -61,17 +60,9 @@ csv of table to a series of Markdown files.`,
 func init() {
 	rootCmd.AddCommand(convertCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// convertCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// convertCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	convertCmd.Flags().String("csv", "", "csv filepath")
-	convertCmd.Flags().String("out", "generated", "output folder")
+	convertCmd.Flags().String("out", "out", "output folder")
+	convertCmd.Flags().Bool("flat", true, "output markdowns in same folder or in category folder")
 }
 
 func checkParams(fs *pflag.FlagSet) error {
@@ -107,14 +98,14 @@ func checkParams(fs *pflag.FlagSet) error {
 	return nil
 }
 
-func csvToMarkdowns(csv, out string) error {
+func csvToMarkdowns(csv, out string, flat bool) error {
 	recs, err := parseCSV(csv)
 	if err != nil {
 		return err
 	}
 
 	// generate markdown under out
-	return generateMarkdowns(recs, out)
+	return generateMarkdowns(recs, out, flat)
 }
 
 func parseCSV(f string) ([]Article, error) {
@@ -169,9 +160,9 @@ func parseCSV(f string) ([]Article, error) {
 	return recs, nil
 }
 
-func generateMarkdowns(recs []Article, out string) error {
+func generateMarkdowns(recs []Article, out string, flat bool) error {
 	for _, r := range recs {
-		err := generateMarkdown(r, out)
+		err := generateMarkdown(r, out, flat)
 		if err != nil {
 			return err
 		}
@@ -213,8 +204,13 @@ func init() {
 	tpl = t
 }
 
-func generateMarkdown(r Article, out string) error {
-	dir := filepath.Join(out, r.Category)
+func generateMarkdown(r Article, out string, flat bool) error {
+	var dir string
+	if !flat {
+		dir = filepath.Join(out, r.Category)
+	} else {
+		dir = out
+	}
 	_ = os.MkdirAll(dir, os.ModePerm)
 
 	out = filepath.Join(dir, r.About+".md")
