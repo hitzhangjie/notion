@@ -137,8 +137,12 @@ func parseCSV(f string) ([]Article, error) {
 	}
 
 	fields := records[0]
+
 	for i, f := range fields {
 		fields[i] = strings.TrimSpace(f)
+		if i == 0 {
+			fields[i] = strings.TrimLeft(fields[i], string(0xfeff))
+		}
 	}
 
 	recs := []Article{}
@@ -152,9 +156,11 @@ func parseCSV(f string) ([]Article, error) {
 			if strings.Contains(f, "'") {
 				f = strings.ReplaceAll(f, "'", "\"")
 			}
-			fd := rv.FieldByName(strings.TrimSpace(fields[i]))
+			fieldName := strings.TrimSpace(fields[i])
+			fd := rv.FieldByName(fieldName)
 			if !fd.IsValid() {
-				fmt.Println("what the fuck: ", fields[i])
+				fmt.Println("what the fuck: ", fieldName)
+				fmt.Println("len(fieldName: ", len([]rune(fieldName)))
 			}
 			fd.SetString(f)
 		}
